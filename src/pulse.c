@@ -1,19 +1,22 @@
 /**
  * @brief 单脉冲源
- * @file
+ * @file pulse.c 
  * @author shenxf 380406785@@qq.com
  * @version V1.0.0
  * @date 2016-09-03
  * 
+ *单脉冲生产源模块，
  * 函数列表
- * @ref pls_init
- * @ref pls_set_pulse
- * @ref pls_set_mode
- * @ref pls_set_param
- * @ref pls_get_sta
- * @ref pls_start
- * @ref pls_get_delay
- * @ref pls_get_width
+ *@sa pls_init() 初始化
+ *@sa pls_set_pulse() 手动设置时间参数
+ *@sa pls_set_param() 自动设置时间参数
+ *@sa pls_set_mode()  设置工作模式
+ *@sa pls_get_mode() 取工作模式
+ *@sa pls_set_sta()   设置脉冲状态
+ *@sa_t pls_get_sta() 取脉冲状态
+ *@sa pls_get_delay() 取延时数
+ *@sa pls_get_width() 取脉宽数
+ *@sa pls_strtou()    数字字符串转整型数
  */
 #include <avr/interrupt.h>
 #include "pulse.h"
@@ -29,7 +32,15 @@ typedef struct pls_data
 }spls_t;
 
 volatile uint8_t pls_mode;/**<模式，0自动，非0手动*/
-volatile uint8_t pls_sta;/**<脉冲波状态*/
+
+/**
+ *脉冲波状态
+ *@sa PULSE_STA_DELAY
+ *@sa PULSE_STA_WIDTH
+ *@sa PULSE_STA_COMPLETE
+ */
+volatile uint8_t pls_sta;
+
 volatile uint8_t pls_index;/**<延迟脉宽结构类型数组下标*/
 volatile uint16_t delays;/**<预产生延迟时间数*/
 volatile uint16_t widths;/**<预产生脉冲时间数*/
@@ -194,7 +205,12 @@ void pls_init(void)
 }
 
 /**
- * 
+ *@brief 手动设置延时、脉宽参数
+  *@param[in] dly 预设置的延时数，单位0.1ms
+  *@param[in] wtd 预设置的脉宽数，单位0.1ms
+  *
+  *延时数范围5000～99999，脉宽数范围4000～10000。仅在手动模式进行设置
+  *@sa pls_set_param() 自动设置时间参数
  */
 void pls_set_pulse(uint32_t dly,uint16_t wtd)
 {
@@ -202,21 +218,17 @@ void pls_set_pulse(uint32_t dly,uint16_t wtd)
   {
     if(dly < 65536UL)
     {
-      delays = dly;
+      delays = (uint16_t)dly;
       widths = wtd;
       if(delays < 5000U)
       {
         delays = 5000U;
       }
-      if(widths < 4000U)
-      {
-        widths = 4000U;
-      }
       pls_pre = 99U;
     }
     else if(dly < 100000UL)
     {
-      delays = dly / 2;
+      delays = (uint16_t)(dly / 2);
       widths = wtd / 2;
       pls_pre = 199U;
     }
@@ -226,10 +238,45 @@ void pls_set_pulse(uint32_t dly,uint16_t wtd)
       widths = wtd / 2;
       pls_pre = 199U;
     }
+    if(pls_pre > 100U)
+    {
+    	if(widths > 5000U)
+    	{
+    		widths = 5000U;
+    	}
+    	else if(widths < 2000U)
+    	{
+    		widths = 2000U;
+    	}
+    	else
+    	{
+    		;
+    	}
+    }
+    else
+    {
+    	if(widths > 10000U)
+    	{
+    		widths = 10000U;
+    	}
+    	else if(widths < 4000U)
+    	{
+    		widths = 4000U;
+    	}
+    	else
+    	{
+    		;
+    	}
+    }
   }
 }
 
 /**
+ *@brief 设置工作模式
+ *@param[in] mod 模式
+ *-0自动模式，缺省值
+ *-非零手动模式
+ *@sa pls_get_mode() 取工作模式
  */
 void pls_set_mode(uint8_t mod)
 {
@@ -237,6 +284,22 @@ void pls_set_mode(uint8_t mod)
 }
 
 /**
+ *@brief 获取工作模式
+ *@return 0自动模式，缺省值,非零手动模式
+ *@sa pls_set_mode()  设置工作模式
+ */
+uint8_t pls_get_mode(void)
+{
+  return pls_mode;
+}
+
+/**
+ *@brief 得到产生单脉冲的工作状态
+ *@return 状态
+ *- @ref PULSE_STA_DELAY 延时态，触发后首先进入的状态
+ *- @ref PULSE_STA_WIDTH 脉宽态，经预定延时转换后的脉冲作用状态
+ *- @ref PULSE_STA_COMPLETE 完成态，单脉冲产生已完成的状态或准备开始新的触发的状态
+ *@sa pls_set_sta()   设置脉冲状态
  */
 uint8_t pls_get_sta(void)
 {
@@ -244,6 +307,19 @@ uint8_t pls_get_sta(void)
 }
 
 /**
+ *@brief 设置工作状态
+ *@sa_t pls_get_sta() 取脉冲状态
+ */
+void pls_set_sta(uint8_t sta)
+{
+  pls_sta = sta;  
+}
+
+/**
+ *@brief 从FLASH存储数据进行设置延时、脉宽参数
+ *@sa pls_set_pulse() 手动设置时间参数
+ *@sa tims
+ *@sa pls_index
  */
 void pls_set_param(void)
 {
@@ -264,10 +340,12 @@ void pls_set_param(void)
 }
 
 /**
+ *@brief 得到延时数
+ *@return 延时数，单位0.1ms
  */
-uint16_t pls_get_delay(void)
+uint32_t pls_get_delay(void)
 {
-  uint16_t ret;
+  uint32_t ret;
   ret = delays;
   if(pls_pre > 100U)
   {
@@ -277,6 +355,8 @@ uint16_t pls_get_delay(void)
 }
 
 /**
+ *@brief 得到脉宽数
+ *@return 脉宽数，单位0.1ms
  */
 uint16_t pls_get_width(void)
 {
@@ -287,4 +367,25 @@ uint16_t pls_get_width(void)
     ret *= 2U;
   }
   return ret;
+}
+
+/**
+ *@brief 数字字符串转整型数
+ *@param str 数字字符串
+ *@return 整型数
+ */
+uint32_t pls_strtou(uint8_t str[])
+{
+  uint32_t ret = 0;
+  int8_t i = 0;
+  while(str[i] != 0)
+  {
+    ret *= 10;
+    ret += (uint8_t)(str[i++] - 0x30U);
+    if(i >= 5)
+    {
+      break;
+    }
+  }
+  return ret;    
 }

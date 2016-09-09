@@ -1,61 +1,45 @@
 /**
- * @brief 
+ * @brief 串口接口模块头文件
+ * @file uart.h
+ * @author shenxf 380406785@qq.com
+ * @version V1.0.0
+ * @date 2016-09-08
+ *
+ * 串口接口常数定义与函数声明\n
+ * 函数列表：
+ *@sa uart_init() 初始化
+ *@sa uart_send() 发送一个字符
+ *@sa uart_getchar() 接收一个字符
+ *@sa uart_getnum()  接收数字字符串
+ *@sa uart_putsn_P() 发送FLASH的字符串
+ *@sa uart_flush() 清空接收缓冲区
+ *@sa uart_received() 是否已接收了数据／字符
  */
 #ifndef UART_H
 #define UART_H
 #include <avr/io.h>
-#include <avr/pgmspace.h>
-#include <avr/interrupt.h>
-#include <stdio.h>
 
-#define UBRRH 	UBRR0H 
-#define UBRRL 	UBRR0L
-#define UDR		UDR0
-#define UCSRA		UCSR0A
-#define UCSRB		UCSR0B
-#define UCSRC		UCSR0C
-#define UDRE		UDRE0
-#define RXC		RXC0
-#define RXEN		RXEN0	 
-#define TXEN		TXEN0	 
-#define UCSZ1		UCSZ01	 
-#define UCSZ0		UCSZ00	 
-#define USBS		USBS0
-#define FE			FE0
-#define DOR		DOR0
-#define U2X		U2X0
-	 
-#if defined(USE_PRINT)    
-extern FILE uart_str;
-#endif 
+#define UBRRH 	UBRR0H  /**<usart波特率寄存器高八位*/
+#define UBRRL 	UBRR0L  /**<usart波特率寄存器低八位*/
+#define UDR		UDR0    /**<usart数据接收/发送寄存器*/
+#define UCSRA	UCSR0A  /**<usart控制寄存器A*/
+#define UCSRB	UCSR0B  /**<usart控制寄存器B*/
+#define UCSRC	UCSR0C  /**<usart控制寄存器C*/
+#define UDRE	UDRE0   /**<usart控制寄存器A,UDRE位*/
+#define RXC		RXC0    /**<usart控制寄存器A,RXC位*/
+#define RXEN	RXEN0   /**<usart控制寄存器B,RXEN位*/	 
+#define TXEN	TXEN0   /**<usart控制寄存器B,TXEN位*/	 
+#define UCSZ1	UCSZ01  /**<usart控制寄存器B,UCSZ1位*/	 
+#define UCSZ0	UCSZ00  /**<usart控制寄存器B,UCSZ0位*/	 
+#define USBS	USBS0   /**<usart控制寄存器B,USBS位*/
+#define FE		FE0     /**<usart控制寄存器B,FE位*/
+#define DOR		DOR0    /**<usart控制寄存器B,DOR位*/
+#define U2X		U2X0    /**<usart控制寄存器B,U2X位*/
 
-static inline void uart_init(uint32_t baud)
-{
-	uint16_t pri;
-	if(baud<19200)	
-	{
-		pri = (int16_t)(F_CPU/(16*baud))-1;
-	}
-	else
-	{
-		pri = (int16_t)(F_CPU/(8*baud))-1;
-		UCSRA |= _BV(U2X0);
-	}		
-	UBRRH = pri>>8;
-	UBRRL =(uint8_t) pri;
-	UCSRB = _BV(RXEN)|_BV(TXEN);
-	UCSRC = _BV(UCSZ1)|_BV(UCSZ0);
-#if defined(USE_PRINT)    
- stdout=stdin=&uart_str;
-#endif 
-}
-static inline void uart_send(uint8_t byte)
-{
-	while(!(UCSRA&_BV(UDRE)));
-	UDR = byte;
-}
+void uart_send(uint8_t byte);
+void uart_init(uint32_t baud);
 uint8_t uart_getchar(void);
-uint8_t uart_getline(char str[],uint8_t n);
+int8_t uart_getnum(uint8_t str[]);
 void uart_putsn(char str[],uint8_t n);
 void uart_putsn_P(const __flash char str[],uint8_t n);
 void uart_flush(void);

@@ -291,7 +291,16 @@ AVRDUDE_BAUD = -b 115200 -D
 endif 
 
 # com1 = serial port. Use lpt1 to connect to parallel port.
+OS ?= mac
+ifeq ($(OS),linux)
 AVRDUDE_PORT = /dev/ttyUSB0    # programmer connected to serial device
+else
+ifeq ($(OS),mac)
+AVRDUDE_PORT = /dev/tty.wchusbserial1410    # programmer connected to serial device
+else
+AVRDUDE_PORT = com3
+endif
+endif
 
 AVRDUDE_WRITE_FLASH = -U flash:w:$(OBJDIR)/$(TARGET).hex
 #AVRDUDE_WRITE_EEPROM = -U eeprom:w:$(TARGET).eep
@@ -426,8 +435,8 @@ lss: $(OBJDIR)/$(TARGET).lss
 sym: $(OBJDIR)/$(TARGET).sym
 LIBNAME=lib$(TARGET).a
 lib: $(LIBNAME)
-
-
+doc:Doxyfile
+	doxygen
 
 # Eye candy.
 # AVR Studio 3.x does not check make's exit code but relies on
@@ -620,6 +629,6 @@ $(shell mkdir $(OBJDIR) 2>/dev/null)
 # Listing of phony targets.
 .PHONY : all begin finish end sizebefore sizeafter gccversion \
 build elf hex eep lss sym coff extcoff \
-clean clean_list program debug gdb-config
+clean clean_list program debug gdb-config doc
 
 

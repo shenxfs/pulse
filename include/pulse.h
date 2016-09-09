@@ -2,17 +2,19 @@
  * @brief 单脉冲源头文件
  * @file
  * @author shenxf 380406785@@qq.com
- * @version V1.0.0
+ * @version 
  * @date 2016-09-03
  * 函数列表
- * @ref pls_init
- * @ref pls_set_pulse
- * @ref pls_set_mode
- * @ref pls_set_param
- * @ref pls_get_sta
- * @ref pls_start
- * @ref pls_get_delay
- * @ref pls_get_width
+ *@sa pls_init() 初始化
+ *@sa pls_set_pulse() 手动设置时间参数
+ *@sa pls_set_param() 自动设置时间参数
+ *@sa pls_set_mode()  设置工作模式
+ *@sa pls_get_mode() 取工作模式
+ *@sa pls_set_sta()   设置脉冲状态
+ *@sa_t pls_get_sta() 取脉冲状态
+ *@sa pls_get_delay() 取延时数
+ *@sa pls_get_width() 取脉宽数
+ *@sa pls_strtou()    数字字符串转整型数
  */ 
 #ifndef PULSE_H
 #define PULSE_H
@@ -48,8 +50,10 @@ void pls_init(void);
 void pls_set_pulse(uint32_t dly,uint16_t wtd);
 void pls_set_mode(uint8_t mod);
 void pls_set_param(void);
+void pls_set_sta(uint8_t sta);
 uint8_t pls_get_sta(void);
-void pls_start(void);
-uint16_t pls_get_delay(void);
+uint8_t pls_get_mode(void);
+uint32_t pls_get_delay(void);
 uint16_t pls_get_width(void);
+uint32_t pls_strtou(uint8_t str[]);
 #endif
