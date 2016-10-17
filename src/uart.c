@@ -2,8 +2,8 @@
  * @brief 串口接口模块
  * @file uart.c
  * @author shenxf 380406785@qq.com
- * @version V1.0.0
- * @date 2016-09-08
+ * @version V1.1.0
+ * @date 2016-10-17
  *
  * 串口接口驱动程序，中断接收，查询发送\n
  * 函数列表：
@@ -14,6 +14,7 @@
  *@sa uart_putsn_P() 发送FLASH的字符串
  *@sa uart_flush() 清空接收缓冲区
  *@sa uart_received() 是否已接收了数据／字符
+ *@sa uart_write_times() 发送时间参数数据
  */
 #include <avr/interrupt.h>
 #include "uart.h"
@@ -44,6 +45,7 @@ ISR(USART_RX_vect)
  *@sa uart_getnum()  接收数字字符串
  *@sa uart_putsn_P() 发送FLASH的字符串
  *@sa uart_received() 是否已接收了数据／字符
+ *@sa uart_write_times() 发送时间参数数据
  */
 void uart_flush(void)
 {
@@ -60,6 +62,7 @@ void uart_flush(void)
  *@sa uart_putsn_P() 发送FLASH的字符串
  *@sa uart_flush() 清空接收缓冲区
  *@sa uart_received() 是否已接收了数据／字符
+ *@sa uart_write_times() 发送时间参数数据
  */
 uint8_t uart_received(void)
 {
@@ -75,6 +78,7 @@ uint8_t uart_received(void)
  *@sa uart_getnum()  接收数字字符串
  *@sa uart_flush() 清空接收缓冲区
  *@sa uart_received() 是否已接收了数据／字符
+ *@sa uart_write_times() 发送时间参数数据
  */
 void uart_putsn_P(const __flash char str[],uint8_t n)
 {
@@ -85,7 +89,8 @@ void uart_putsn_P(const __flash char str[],uint8_t n)
       ch = (uint8_t)str[i];
       if('\n' == ch)
       {
-        uart_send('\r');					
+        uart_send('\r');
+        uart_send('\n');
       }
       else if('\0' == ch)
       {
@@ -106,13 +111,14 @@ void uart_putsn_P(const __flash char str[],uint8_t n)
  *@sa uart_putsn_P() 发送FLASH的字符串
  *@sa uart_flush() 清空接收缓冲区
  *@sa uart_received() 是否已接收了数据／字符
+ *@sa uart_write_times() 发送时间参数数据
 */
 uint8_t uart_getchar(void)
 {
 	uint8_t ret;
 	while(uart_head == uart_end)
 	{
-		__builtin_avr_nop();
+		__builtin_avr_wdr();
 	}
 	ret = uart_rxbuf[uart_head];
 	uart_head++;
@@ -132,6 +138,7 @@ uint8_t uart_getchar(void)
  *@sa uart_putsn_P() 发送FLASH的字符串
  *@sa uart_flush() 清空接收缓冲区
  *@sa uart_received() 是否已接收了数据／字符
+ *@sa uart_write_times() 发送时间参数数据
 */
 int8_t uart_getnum(uint8_t str[])
 {
@@ -139,19 +146,19 @@ int8_t uart_getnum(uint8_t str[])
 	uint8_t ch;
 	str[0] = 0;
 	ch = uart_getchar();
-	while(ch != '\n')
+	while(ch != '\r')
 	{
 		if((ch >= '0')&&(ch <= '9'))
 		{
-			str[ret] = ch;
-			ret++;
-			if(ret >= 5)
+			if(ret < 5U)
 			{
-				ret = 5;
+			    str[ret] = ch;
+				ret++;
+				uart_send(ch);
 			}
 			else
 			{
-				uart_send(ch);
+			    ret = 5U;
 			}
 		}
 		else if(0x08U == ch)
@@ -162,6 +169,11 @@ int8_t uart_getnum(uint8_t str[])
 				uart_send(ch);
 			}
 		}
+		else
+		{
+		  break;
+		}
+        ch = uart_getchar();
 	}
 	return ret;
 }
@@ -173,19 +185,19 @@ int8_t uart_getnum(uint8_t str[])
 void uart_init(uint32_t baud)
 {
 	uint16_t pri;
-	if(baud<19200U)	
+	if(baud < 19200U)
 	{
-		pri = (uint16_t)((int16_t)(F_CPU/(16*baud))-1);
+		pri = (uint16_t)((int16_t)(F_CPU/(16*baud)) - 1);
 	}
 	else
 	{
-		pri = (uint16_t)((int16_t)(F_CPU/(8*baud))-1);
+		pri = (uint16_t)((int16_t)(F_CPU/(8*baud)) - 1);
 		UCSRA |= _BV(U2X0);
 	}		
-	UBRRH = (uint8_t)(pri>>8);
-	UBRRL =(uint8_t) pri;
-	UCSRB = _BV(RXEN)|_BV(TXEN);
-	UCSRC = _BV(UCSZ1)|_BV(UCSZ0);
+	UBRRH = (uint8_t)(pri >> 8);
+	UBRRL = (uint8_t)pri;
+	UCSRB = _BV(RXEN) | _BV(TXEN) | _BV(RXCIE);
+	UCSRC = _BV(UCSZ1) | _BV(UCSZ0);
 }
 
 /**
@@ -196,6 +208,7 @@ void uart_init(uint32_t baud)
  *@sa uart_putsn_P() 发送FLASH的字符串
  *@sa uart_flush() 清空接收缓冲区
  *@sa uart_received() 是否已接收了数据／字符
+ *@sa uart_write_times() 发送时间参数数据
 */
 void uart_send(uint8_t byte)
 {
@@ -204,4 +217,47 @@ void uart_send(uint8_t byte)
 	  __builtin_avr_nop();
 	} 
 	UDR = byte;
+}
+
+/**
+ *@brief 发送时间参数数据，按“＃.####“
+ *@param num 时间参数，单位0.1ms
+ *@sa uart_send() 发送一个字符
+ *@sa uart_getchar() 接收一个字符
+ *@sa uart_getnum()  接收数字字符串
+ *@sa uart_putsn_P() 发送FLASH的字符串
+ *@sa uart_flush() 清空接收缓冲区
+ *@sa uart_received() 是否已接收了数据／字符
+*/
+void uart_write_times(uint32_t num)
+{
+  uint8_t str[6];
+  uint8_t i,dgt;
+  uint32_t n;
+  for(i = 0;i < 6;i++)
+  {
+    str[i] = '0';
+  }
+  str[1] = '.';
+  n = num;
+  if(n < 100000UL)
+  {
+    i = 5U;
+    while(n!= 0)
+    {
+      dgt = (uint8_t)(n % 10U);
+      str[i] += dgt;
+      n /= 10U;
+      i--;
+      if(i == 1U)
+      {
+        break;
+      }
+    }
+    str[0] += (uint8_t)(n % 10U);
+    for(i =0;i < 6;i++)
+    {
+       uart_send(str[i]);
+    }
+  }
 }

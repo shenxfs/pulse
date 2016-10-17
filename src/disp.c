@@ -2,8 +2,8 @@
  * @brief 5位数码管动态显示
  * @file disp.c
  * @author shenxf 380406785@@qq.com
- * @version V1.0.0
- * @date 2016-09-03
+ * @version V1.1.0
+ * @date 2016-10-17
  * 
  * 5位公阴数码管动态显示，
  * 函数列表
@@ -169,7 +169,7 @@ void disp_init(void)
   DIGIT0_DDR  &= ~_BV(DIGIT_PIN0);
   
   /*七段数码管编码缓冲区，下标0对应DS0*/
-  for(i = 0;i<5;i++)
+  for(i = 0;i<5U;i++)
   {
     disp_buf[i] = 0;
   }
@@ -177,7 +177,7 @@ void disp_init(void)
   
   /*定时器2初始化，CTC模式，计数器清零，比较匹配寄存器赋值249，T2分频数250，关闭T2时钟*/
   TCCR2A = _BV(WGM21);
-  OCR2A = 249;
+  OCR2A = 249U;
   TCNT2 = 0;
   TCCR2B = 0;
 }
@@ -248,7 +248,7 @@ void disp_play(uint32_t num)
   if(nm<100000UL)
   {
     /*五位十进制数字，初始值0*/
-    for(ind = 0;ind < 5;ind++)
+    for(ind = 0;ind < 5U;ind++)
     {
       digits[ind] = 0;
     }
@@ -257,18 +257,18 @@ void disp_play(uint32_t num)
     ind = 0;
     do
     {
-      dgt = nm % 10;
+      dgt = (uint8_t)(nm % 10U);
       digits[ind] = dgt;
       nm /= 10;
       ind++;
     }
     while(0 != nm);
-    dgt = nm % 10;
+    dgt = (uint8_t)(nm % 10);
     digits[ind] = dgt;
 
     /*将十进制数转换成七段数码管编码*/
     disp_buf[4] = digitcode[digits[4]] | DPOINT;/*最高位总是带小数点的，因此加上dp位*/
-    for(ind = 0;ind < 4;ind++)
+    for(ind = 0;ind < 4U;ind++)
     {
       disp_buf[ind] = digitcode[digits[ind]];
     }
@@ -286,7 +286,7 @@ void disp_play(uint32_t num)
 void disp_fill(uint8_t segs)
 {
   uint8_t i;
-  for(i = 0;i < 5;i++)
+  for(i = 0;i < 5U;i++)
   {
     disp_buf[i] = segs;
   }    

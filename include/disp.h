@@ -2,8 +2,8 @@
  *@brief 5位数码管显示模块头文件
  *@file disp.h
  *@author shenxf 380406785@@qq.com
- *@version V1.0.0
- *@date	2016-09-06
+ *@version V1.1.0
+ *@date	2016-10-17
  *函数列表：\n
  * @sa disp_init 初始化
  * @sa disp_on  开显示

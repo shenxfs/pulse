@@ -2,8 +2,8 @@
  * @brief 单脉冲源
  * @file pulse.c 
  * @author shenxf 380406785@@qq.com
- * @version V1.0.0
- * @date 2016-09-03
+ * @version V1.1.0
+ * @date 2016-10-17
  * 
  *单脉冲生产源模块，
  * 函数列表
@@ -13,7 +13,8 @@
  *@sa pls_set_mode()  设置工作模式
  *@sa pls_get_mode() 取工作模式
  *@sa pls_set_sta()   设置脉冲状态
- *@sa_t pls_get_sta() 取脉冲状态
+ *@sa pls_get_sta() 取脉冲状态
+ *@sa pls_get_busy() 取工作状态
  *@sa pls_get_delay() 取延时数
  *@sa pls_get_width() 取脉宽数
  *@sa pls_strtou()    数字字符串转整型数
@@ -45,7 +46,7 @@ volatile uint8_t pls_index;/**<延迟脉宽结构类型数组下标*/
 volatile uint16_t delays;/**<预产生延迟时间数*/
 volatile uint16_t widths;/**<预产生脉冲时间数*/
 volatile uint8_t pls_pre;/**<时基分频数减1,时基频率2MHz*/
-
+volatile uint8_t pls_busy;/**<产生脉冲的工作标志，0未开始，不忙；1在进行，忙*/
 /**
  * 自动模式延迟脉宽数据，共20组数据
  */
@@ -121,6 +122,10 @@ __flash const spls_t tims[20] =
 ISR (INT0_vect)
 {
     TCCR0B |= _BV(CS01);  
+    TIMSK1 |= _BV(OCIE1A);
+    EIMSK &= ~_BV(INT0);
+    LED_PORT &= ~_BV(LED_PIN);
+    pls_busy = 1U;
 }
 
 /**
@@ -134,11 +139,14 @@ ISR (TIMER1_COMPA_vect)
   {
     pls_sta = PULSE_STA_WIDTH;
     OCR1A = widths;
+    LED_PORT |= _BV(LED_PIN);
   }
   else if(PULSE_STA_WIDTH == pls_sta)
   {
     TCCR0B &= ~_BV(CS01);
+    LED_PORT &= ~_BV(LED_PIN);
     pls_sta = PULSE_STA_COMPLETE;
+    pls_busy = 0;
     TCNT1 = 0;
     TCNT0 = 0;
     TIMSK1 = 0;
@@ -155,6 +163,11 @@ ISR (TIMER1_COMPA_vect)
   }
 }
 
+ISR (TIMER0_COMPA_vect)
+{
+	LED_PORT ^= _BV(LED_PIN);
+}
+
 /**
  * 初始化
  */
@@ -163,7 +176,7 @@ void pls_init(void)
   /*触发端口及外部中断0初始化*/
   SPARK_DDR &= ~_BV(SPARK_PIN);
   SPARK_PORT |= _BV(SPARK_PIN);
-  EICRA = _BV(ISC01);
+  EICRA = _BV(ISC00);
   EIMSK = 0;
 
   /*脉冲输出端口初始化*/
@@ -185,12 +198,13 @@ void pls_init(void)
   /*定时器0CTC模式，OC0输出0.1ms或0.2ms时基信号*/
   TCCR0A = _BV(COM0A0)|_BV(WGM01);
   TCCR0B = 0; 
-  OCR0A = 99;
+  OCR0A = 99U;
   TCNT0 = 0;
 
   /*定时器1CTC模式，OC1A管脚的状态产生预期脉冲*/
   TCCR1A = _BV(COM1A0);
-  TCCR1B = _BV(WGM12)|_BV(CS12)|_BV(CS11);
+//  TCCR1B = _BV(WGM12)|_BV(CS12)|_BV(CS11);
+  TCCR1B = _BV(WGM12);
   TIFR1 = _BV(OCF1A);
   OCR1A = 5000U;
   TCNT1 = 0;  
@@ -198,7 +212,8 @@ void pls_init(void)
   /*全局变量初始化*/
   pls_sta = PULSE_STA_COMPLETE;
   pls_mode = 0;
-  pls_index = 0;
+  pls_index = 3U;
+  pls_busy = 0;
   pls_pre = 99U;
   delays = 5000U;
   widths = 5000U;
@@ -294,6 +309,15 @@ uint8_t pls_get_mode(void)
 }
 
 /**
+ *@brief 获取工作运行状态
+ *@return 0未开始产生脉冲，缺省值；非零在进行，忙
+ */
+uint8_t pls_get_busy(void)
+{
+  return pls_busy;
+}
+
+/**
  *@brief 得到产生单脉冲的工作状态
  *@return 状态
  *- @ref PULSE_STA_DELAY 延时态，触发后首先进入的状态
@@ -308,7 +332,7 @@ uint8_t pls_get_sta(void)
 
 /**
  *@brief 设置工作状态
- *@sa_t pls_get_sta() 取脉冲状态
+ *@sa pls_get_sta() 取脉冲状态
  */
 void pls_set_sta(uint8_t sta)
 {
@@ -337,6 +361,7 @@ void pls_set_param(void)
   OCR0A = pls_pre;
   OCR1A = delays;
   pls_sta = PULSE_STA_DELAY;
+  pls_busy = 0;
 }
 
 /**
@@ -380,9 +405,9 @@ uint32_t pls_strtou(uint8_t str[])
   int8_t i = 0;
   while(str[i] != 0)
   {
-    ret *= 10;
+    ret *= 10U;
     ret += (uint8_t)(str[i++] - 0x30U);
-    if(i >= 5)
+    if(i >= 5U)
     {
       break;
     }

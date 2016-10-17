@@ -294,11 +294,14 @@ endif
 OS ?= mac
 ifeq ($(OS),linux)
 AVRDUDE_PORT = /dev/ttyUSB0    # programmer connected to serial device
+AVRDUDE_CONF =
 else
 ifeq ($(OS),mac)
 AVRDUDE_PORT = /dev/tty.wchusbserial1410    # programmer connected to serial device
+AVRDUDE_CONF = -C /usr/local/etc/avrdude.conf
 else
 AVRDUDE_PORT = com3
+AVRDUDE_CONF =
 endif
 endif
 
@@ -323,7 +326,7 @@ AVRDUDE_ERASE_COUNTER = -y
 #AVRDUDE_VERBOSE = -v -v
 
 AVRDUDE_FLAGS = -p $(MCU) -P $(AVRDUDE_PORT) -c $(AVRDUDE_PROGRAMMER) $(AVRDUDE_BAUD)
-AVRDUDE_FLAGS += $(AVRDUDE_NO_VERIFY)
+AVRDUDE_FLAGS += $(AVRDUDE_NO_VERIFY) $(AVRDUDE_CONF)
 AVRDUDE_FLAGS += $(AVRDUDE_VERBOSE)
 AVRDUDE_FLAGS += $(AVRDUDE_ERASE_COUNTER)
 
