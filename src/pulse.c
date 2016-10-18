@@ -2,8 +2,8 @@
  * @brief 单脉冲源
  * @file pulse.c 
  * @author shenxf 380406785@@qq.com
- * @version V1.1.0
- * @date 2016-10-17
+ * @version V1.1.1
+ * @date 2016-10-18
  * 
  *单脉冲生产源模块，
  * 函数列表
@@ -212,7 +212,7 @@ void pls_init(void)
   /*全局变量初始化*/
   pls_sta = PULSE_STA_COMPLETE;
   pls_mode = 0;
-  pls_index = 3U;
+  pls_index = 0U;
   pls_busy = 0;
   pls_pre = 99U;
   delays = 5000U;

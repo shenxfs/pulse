@@ -2,8 +2,8 @@
  *@brief 单脉冲发生器
  *@file main.c
  *@author shenxf 380406785@@qq.com
- *@version V1.1.0
- *@date 2016-10-17
+ *@version V1.1.1
+ *@date 2016-10-18
  *
  *软件运行硬件环境：atmega328p或Arduino nano、Arduino pro mini、Arduino UNO等开发板\n
  *软件编译环境：avr-gcc-4.8.1或更新的版本\n
@@ -24,7 +24,7 @@
  *@brief 存在FLASH的提示字符串
 */
 __flash const char pbrief[68] =
-"Single pulse generator\nV1.0.0\n\nPress 'm' or 'M' enter manual model\n";
+"Single pulse generator\nV1.1.1\n\nPress 'm' or 'M' enter manual model\n";
 
 /**
  *@var __flash const char promptmanual[40]
@@ -203,7 +203,6 @@ int main(void)
         {
           /*触发端口状态正常，熄灭指示灯，关显示，获取预产生的延时和脉宽参数*/
           disp_off();
-          LED_PORT &= ~_BV(LED_PIN);
           pls_set_param();
 
           /*准备响应触发，显示时间参数*/
@@ -211,52 +210,52 @@ int main(void)
           uart_putsn_P(pstart,20U);
           uart_write_times(pls_get_delay());
           uart_send(',');
-          uart_write_times(pls_get_delay());
+          uart_write_times(pls_get_width());
           uart_send('\n');
           uart_send('\r');
           EIMSK |= _BV(INT0);
           EIFR |= _BV(INT0);
           disp_on();
           disp_play(pls_get_delay());
+          LED_PORT |= _BV(LED_PIN);
           while(_BV(SPARK_PIN) == (SPARK_PINS & _BV(SPARK_PIN)))
           {
             wdt_reset();
           }
           TCCR0B |= _BV(CS01);
-          TIMSK0 |= _BV(OCIE0A);
           TCNT1 = 0;
           TCCR1B |= _BV(CS12)|_BV(CS10);
           TIMSK1 |= _BV(OCIE1A);
           EIMSK &= ~_BV(INT0);
-          LED_PORT &= ~_BV(LED_PIN);
           pls_set_sta(PULSE_STA_DELAY);
-
+          LED_PORT &= ~_BV(LED_PIN);
+          ind =0;
           /*等待单脉冲输出完成*/
           while(pls_get_sta() != PULSE_STA_COMPLETE)
           {
             if(pls_get_busy() != 0)
             {
-            /*等待过程中交替显示时间参数，约 0.5秒显示延时和脉宽，闪亮指示灯*/
+            /*等待过程中交替显示时间参数，约 0.3秒显示延时和脉宽，闪亮指示灯*/
               if(0 == ind)
               {
                 disp_play(pls_get_delay());
-                LED_PORT |= _BV(LED_PIN);
               }
-              else if( 50U == ind)
+              else if( 30U == ind)
               {
                 disp_play(pls_get_width());
-                LED_PORT &= ~_BV(LED_PIN);
               }
               else
               {
                 ;/*no deal with*/
               }
               ind++;
-              if(100U == ind)
+              if(60U == ind)
               {
                 ind = 0;
               }
 		    }
+            _delay_ms(10);
+            wdt_reset();
           }
           
           /*单脉冲输出完毕，显示“End”*/
@@ -356,7 +355,7 @@ int main(void)
           uart_putsn_P(pstart,20U);
           uart_write_times(pls_get_delay());
           uart_send(',');
-          uart_write_times(pls_get_delay());
+          uart_write_times(pls_get_width());
           uart_send('\n');
           uart_send('\r');
           EIMSK |= _BV(INT0);
@@ -364,34 +363,35 @@ int main(void)
           disp_on();
           disp_play(pls_get_delay());
           uart_putsn_P(pwaitting,16);
+          LED_PORT |= _BV(LED_PIN);
           
           /*等待单脉冲输出完成*/          
           while(pls_get_sta() != PULSE_STA_COMPLETE)
           {
-            /*等待过程中交替显示时间参数，约 0.5秒显示延时和脉宽，闪亮指示灯*/
+            /*等待过程中交替显示时间参数，约 0.3秒显示延时和脉宽，闪亮指示灯*/
             if(pls_get_busy() != 0)
             {
               if(0 == ind)
               {
                 disp_play(pls_get_delay());
-                LED_PORT |= _BV(LED_PIN);
               }
-              else if( 50U == ind)
+              else if( 30U == ind)
               {
                 disp_play(pls_get_width());
-                LED_PORT &= ~_BV(LED_PIN);
               }
               else
               {
                 ;/*no deal with*/
               }
               ind++;
-              if(100U == ind)
+              if(600U == ind)
               {
                 ind = 0;
               }
             }
-          }
+             _delay_ms(10);
+            wdt_reset();
+         }
           
           /*单脉冲输出完毕，显示“End”*/
           uart_putsn_P(psucc,8);
