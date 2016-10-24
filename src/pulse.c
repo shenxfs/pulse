@@ -2,8 +2,8 @@
  * @brief 单脉冲源
  * @file pulse.c 
  * @author shenxf 380406785@@qq.com
- * @version V1.1.1
- * @date 2016-10-18
+ * @version V1.2.0
+ * @date 2016-10-24
  * 
  *单脉冲生产源模块，
  * 函数列表
@@ -121,11 +121,15 @@ __flash const spls_t tims[20] =
  */
 ISR (INT0_vect)
 {
-    TCCR0B |= _BV(CS01);  
-    TIMSK1 |= _BV(OCIE1A);
-    EIMSK &= ~_BV(INT0);
-    LED_PORT &= ~_BV(LED_PIN);
-    pls_busy = 1U;
+    if(_BV(SPARK_PIN) != (SPARK_PINS & _BV(SPARK_PIN)))
+    {
+        TCCR0B = _BV(CS01);
+        TCCR1B |= _BV(CS12)|_BV(CS11)|_BV(CS10);
+        TIMSK1 |= _BV(OCIE1A);
+        EIMSK &= ~_BV(INT0);
+        LED_PORT &= ~_BV(LED_PIN);
+        pls_busy = 1U;
+    }
 }
 
 /**
@@ -143,29 +147,26 @@ ISR (TIMER1_COMPA_vect)
   }
   else if(PULSE_STA_WIDTH == pls_sta)
   {
-    TCCR0B &= ~_BV(CS01);
+    TCCR0B = 0;
+    TCCR1B &= ~(_BV(CS11)|_BV(CS12)|_BV(CS10));
     LED_PORT &= ~_BV(LED_PIN);
     pls_sta = PULSE_STA_COMPLETE;
     pls_busy = 0;
     TCNT1 = 0;
     TCNT0 = 0;
     TIMSK1 = 0;
-    CLKOUT_PORT &= ~_BV(CLKOUT_PIN);
   }
   else
   {
+    TCCR0B = 0;
+    TCCR1B &= ~(_BV(CS11)|_BV(CS12)|_BV(CS10));
+    LED_PORT &= ~_BV(LED_PIN);
     pls_sta = PULSE_STA_COMPLETE;
-    TCCR0B &= ~_BV(CS01);
+    pls_busy = 0;
     TCNT1 = 0;
-    TCNT0 = 0;    
+    TCNT0 = 0;
     TIMSK1 = 0;
-    CLKOUT_PORT &= ~_BV(CLKOUT_PIN);
   }
-}
-
-ISR (TIMER0_COMPA_vect)
-{
-	LED_PORT ^= _BV(LED_PIN);
 }
 
 /**
@@ -176,34 +177,27 @@ void pls_init(void)
   /*触发端口及外部中断0初始化*/
   SPARK_DDR &= ~_BV(SPARK_PIN);
   SPARK_PORT |= _BV(SPARK_PIN);
-  EICRA = _BV(ISC00);
+  EICRA = _BV(ISC01);
   EIMSK = 0;
 
   /*脉冲输出端口初始化*/
   PULSE_DDR |= _BV(PULSE_PIN);
-  PULSE_PORT &= ~_BV(PULSE_PIN);
 
   /*时基输入*/
-  CLKIN_PORT &= _BV(CLKIN_PIN);
   CLKIN_DDR &= ~_BV(CLKIN_PIN);
 
   /*时基输出*/
-  CLKOUT_PORT &= ~_BV(CLKOUT_PIN);
   CLKOUT_DDR |= _BV(CLKOUT_PIN);
 
   /*LED指示灯*/
   LED_DDR |= _BV(LED_PIN);
-  LED_PORT &= ~_BV(LED_PIN);
 
   /*定时器0CTC模式，OC0输出0.1ms或0.2ms时基信号*/
   TCCR0A = _BV(COM0A0)|_BV(WGM01);
-  TCCR0B = 0; 
   OCR0A = 99U;
-  TCNT0 = 0;
 
   /*定时器1CTC模式，OC1A管脚的状态产生预期脉冲*/
   TCCR1A = _BV(COM1A0);
-//  TCCR1B = _BV(WGM12)|_BV(CS12)|_BV(CS11);
   TCCR1B = _BV(WGM12);
   TIFR1 = _BV(OCF1A);
   OCR1A = 5000U;
@@ -327,6 +321,7 @@ uint8_t pls_get_busy(void)
  */
 uint8_t pls_get_sta(void)
 {
+  pls_busy = 1U;
   return pls_sta;  
 }
 

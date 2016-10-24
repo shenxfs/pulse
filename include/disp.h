@@ -2,8 +2,8 @@
  *@brief 5位数码管显示模块头文件
  *@file disp.h
  *@author shenxf 380406785@@qq.com
- *@version V1.1.0
- *@date	2016-10-17
+ *@version V1.2.0
+ *@date	2016-10-24
  *函数列表：\n
  * @sa disp_init 初始化
  * @sa disp_on  开显示
@@ -16,7 +16,7 @@
 #define DISP_H
 #include <avr/io.h>
 
-#define SEGC_POTR PORTC /**<a~f段，PC口*/
+#define SEGC_PORT PORTC /**<a~f段，PC口*/
 #define SEGC_DDR  DDRC /**<PC口方向*/
 #define SEGD_PORT PORTD /**<g、dp段，PD口*/
 #define SEGD_DDR  DDRD  /**<PD口方向*/

@@ -284,14 +284,14 @@ LDFLAGS += $(PRINTF_LIB) $(SCANF_LIB) $(MATH_LIB) $(U8G_LIB)
 #
 ifeq ($(MCU),atmega328p) 
 AVRDUDE_PROGRAMMER = arduino
-AVRDUDE_BAUD = -b 57600 -D
 else
 AVRDUDE_PROGRAMMER = wiring
-AVRDUDE_BAUD = -b 115200 -D
 endif 
 
+AVRDUDE_BAUD = 115200
+
 # com1 = serial port. Use lpt1 to connect to parallel port.
-OS ?= mac
+OS ?= linux
 ifeq ($(OS),linux)
 AVRDUDE_PORT = /dev/ttyUSB0    # programmer connected to serial device
 AVRDUDE_CONF =
@@ -325,7 +325,7 @@ AVRDUDE_ERASE_COUNTER = -y
 # to submit bug reports.
 #AVRDUDE_VERBOSE = -v -v
 
-AVRDUDE_FLAGS = -p $(MCU) -P $(AVRDUDE_PORT) -c $(AVRDUDE_PROGRAMMER) $(AVRDUDE_BAUD)
+AVRDUDE_FLAGS = -p $(MCU) -P $(AVRDUDE_PORT) -c $(AVRDUDE_PROGRAMMER) -b $(AVRDUDE_BAUD) -D
 AVRDUDE_FLAGS += $(AVRDUDE_NO_VERIFY) $(AVRDUDE_CONF)
 AVRDUDE_FLAGS += $(AVRDUDE_VERBOSE)
 AVRDUDE_FLAGS += $(AVRDUDE_ERASE_COUNTER)

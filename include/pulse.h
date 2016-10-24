@@ -2,8 +2,8 @@
  * @brief 单脉冲源头文件
  * @file
  * @author shenxf 380406785@@qq.com
- * @version V1.1.0
- * @date 2016-10-17
+ * @version V1.2.0
+ * @date 2016-10-24
  * 函数列表
  *@sa pls_init() 初始化
  *@sa pls_set_pulse() 手动设置时间参数
@@ -29,11 +29,11 @@
 
 #define CLKOUT_PORT  PORTD  /**<时基输出端口，PD口*/
 #define CLKOUT_DDR   DDRD   /**<时基输出方向，输出*/
-#define CLKOUT_PIN   6      /**<时基输出管脚，PD6脚，Aeduino Nano D5*/
+#define CLKOUT_PIN   6      /**<时基输出管脚，PD6脚，Aeduino Nano D6*/
 
 #define CLKIN_PORT  PORTD   /**<时基输入端口，PD口*/
 #define CLKIN_DDR   DDRD    /**<时基输入方向，输入*/
-#define CLKIN_PIN   5       /**<时基输入管脚，PD5脚，Aeduino Nano D6*/
+#define CLKIN_PIN   5       /**<时基输入管脚，PD5脚，Aeduino Nano D5*/
 
 #define LED_PORT    PORTB   /**<指示灯输出端口，PB口*/
 #define LED_DDR     DDRB    /**<指示灯输出方向，输出*/
@@ -41,7 +41,7 @@
 
 #define PULSE_PORT  PORTB   /**<脉冲输出端口，PB口*/
 #define PULSE_DDR   DDRB    /**<脉冲输出方向，输出*/
-#define PULSE_PIN   2       /**<脉冲输出管脚，PB2脚，Aeduino Nano D9*/
+#define PULSE_PIN   1       /**<脉冲输出管脚，PB1脚，Aeduino Nano D9*/
 
 #define PULSE_STA_DELAY       0x00U   /**<脉冲波的延迟态*/
 #define PULSE_STA_WIDTH       0x01U   /**<脉冲波的宽度态*/

@@ -2,8 +2,8 @@
  * @brief 5位数码管动态显示
  * @file disp.c
  * @author shenxf 380406785@@qq.com
- * @version V1.1.0
- * @date 2016-10-17
+ * @version V1.2.0
+ * @date 2016-10-24
  * 
  * 5位公阴数码管动态显示，
  * 函数列表
@@ -77,7 +77,7 @@ ISR(TIMER2_COMPA_vect)
     ind = 0;
   }
   scode = disp_buf[ind];
-  SEGC_POTR = (scode & 0x3fU);
+  SEGC_PORT = (scode & 0x3fU);
   if(0x40U == (scode & 0x40U))
   {
     SEGD_PORT |= _BV(SEGD_PIN6);
@@ -145,7 +145,7 @@ void disp_init(void)
   *  PD3(D3)-->g
   *  PD4(D4)-->dp
   */
-  SEGC_POTR = 0x00;
+  SEGC_PORT = 0x00;
   SEGC_DDR  = 0x00;
   SEGD_PORT &= ~(_BV(SEGD_PIN6)|_BV(SEGD_PIN7));
   SEGD_DDR  &= ~(_BV(SEGD_PIN6)|_BV(SEGD_PIN7));
@@ -191,7 +191,7 @@ void disp_on(void)
 {
   /*设置段端口为输出*/
   SEGC_DDR  = 0x3fU;
-  SEGD_DDR  = _BV(SEGD_PIN6)|_BV(SEGD_PIN7);
+  SEGD_DDR  |= _BV(SEGD_PIN6)|_BV(SEGD_PIN7);
 
   /*设置位选端口为输出*/
   DIGIT4_DDR  |= _BV(DIGIT_PIN4);

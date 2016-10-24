@@ -2,8 +2,8 @@
  *@brief 单脉冲发生器
  *@file main.c
  *@author shenxf 380406785@@qq.com
- *@version V1.1.1
- *@date 2016-10-18
+ *@version V1.2.0
+ *@date 2016-10-24
  *
  *软件运行硬件环境：atmega328p或Arduino nano、Arduino pro mini、Arduino UNO等开发板\n
  *软件编译环境：avr-gcc-4.8.1或更新的版本\n
@@ -123,7 +123,6 @@ int main(void)
   uint8_t strnum[8];/*数字字符串缓冲区*/
 
   /*各模块初始化，波特率115200，开总中断,点亮LED指示灯，开启开门狗定时器，溢出时间0.5s*/
-  LED_PORT |= _BV(LED_PIN);
   pls_init();
   disp_init();
   uart_init(115200UL);
@@ -141,25 +140,15 @@ int main(void)
     disp_on();
     for(ind = 0;ind<100U;ind++)
     {
-        if(50U == ind)
-        {
-            LED_PORT ^= _BV(LED_PIN);
-        }
         wdt_reset();
         _delay_ms(10);
     }
     disp_off();
-    LED_PORT ^= _BV(LED_PIN);
     for(ind = 0;ind<100U;ind++)
     {
-        if(50U == ind)
-        {
-            LED_PORT ^= _BV(LED_PIN);
-        }
         wdt_reset();
         _delay_ms(10);
     }
-    LED_PORT ^= _BV(LED_PIN);
   }
 
   /*显示“12345”和“67890”*/
@@ -167,21 +156,12 @@ int main(void)
   disp_on();
   for(ind = 0;ind<100U;ind++)
   {
-    if(50U == ind)
-    {
-      LED_PORT ^= _BV(LED_PIN);
-    }
     wdt_reset();
     _delay_ms(10);
   }
-  LED_PORT ^= _BV(LED_PIN);
   disp_play(67890U);
   for(ind = 0;ind<100U;ind++)
   {
-    if(50U == ind)
-    {
-      LED_PORT ^= _BV(LED_PIN);
-    }
      wdt_reset();
      _delay_ms(10);
   }
@@ -190,6 +170,7 @@ int main(void)
   ind = 0;
   LED_PORT |= _BV(LED_PIN);
   uart_flush();
+  TIMSK0 &= ~_BV(OCIE0A);
   /*主控制流程*/
   while(1)
   {
@@ -214,22 +195,10 @@ int main(void)
           uart_send('\n');
           uart_send('\r');
           EIMSK |= _BV(INT0);
-          EIFR |= _BV(INT0);
           disp_on();
           disp_play(pls_get_delay());
           LED_PORT |= _BV(LED_PIN);
-          while(_BV(SPARK_PIN) == (SPARK_PINS & _BV(SPARK_PIN)))
-          {
-            wdt_reset();
-          }
-          TCCR0B |= _BV(CS01);
-          TCNT1 = 0;
-          TCCR1B |= _BV(CS12)|_BV(CS10);
-          TIMSK1 |= _BV(OCIE1A);
-          EIMSK &= ~_BV(INT0);
-          pls_set_sta(PULSE_STA_DELAY);
-          LED_PORT &= ~_BV(LED_PIN);
-          ind =0;
+
           /*等待单脉冲输出完成*/
           while(pls_get_sta() != PULSE_STA_COMPLETE)
           {
@@ -240,7 +209,7 @@ int main(void)
               {
                 disp_play(pls_get_delay());
               }
-              else if( 30U == ind)
+              else if( 50U == ind)
               {
                 disp_play(pls_get_width());
               }
@@ -249,7 +218,7 @@ int main(void)
                 ;/*no deal with*/
               }
               ind++;
-              if(60U == ind)
+              if(100U == ind)
               {
                 ind = 0;
               }
